@@ -7,9 +7,7 @@ import os
 from pathlib import Path
 import tempfile
 import shutil
-
-import paramiko
-from scp import SCPClient
+from time import sleep
 
 
 def list_fit_files(directory):
@@ -117,32 +115,38 @@ def copy_file(local_file, dest_path):
         print(f"Fehler beim Kopieren der Datei '{local_file}': {e}")
 
 
-dropbox_dir = os.environ['DROPBOX_DIR']
-dest_dir = os.environ['DEST_DIR']
+def main():
 
-# Aufruf der Funktion
-fit_files = list_fit_files(dropbox_dir)
+    dropbox_dir = os.environ['DROPBOX_DIR']
+    dest_dir = os.environ['DEST_DIR']
 
-temp_dir = tempfile.mkdtemp()
-for fit_file in fit_files:
-    base_name = os.path.basename(fit_file)
-    okay_file = fit_file+'.done'
-    if not os.path.exists(okay_file):
-        # Ersetze .fit durch .gpx
-        new_file_name_base = (os.path.splitext(base_name)[
-                              0] + ".gpx").replace(' ', '_')
-        new_file_name = os.path.join(
-            temp_dir, new_file_name_base)
-        try:
-            fit_to_gpx(fit_file, new_file_name)
-            print(f"{fit_file} -> {new_file_name}")
-            copy_file(new_file_name, os.path.join(
-                dest_dir, new_file_name_base))
-            with open(okay_file, 'w') as file:
-                file.write('')
+    # Aufruf der Funktion
+    fit_files = list_fit_files(dropbox_dir)
 
-        except Exception as e:
-            print(f"Fehler beim Lesen der FIT-Datei '{fit_file}': {e}")
+    temp_dir = tempfile.mkdtemp()
+    for fit_file in fit_files:
+        base_name = os.path.basename(fit_file)
+        okay_file = fit_file+'.done'
+        if not os.path.exists(okay_file):
+            # Ersetze .fit durch .gpx
+            new_file_name_base = (os.path.splitext(base_name)[
+                0] + ".gpx").replace(' ', '_')
+            new_file_name = os.path.join(
+                temp_dir, new_file_name_base)
+            try:
+                fit_to_gpx(fit_file, new_file_name)
+                print(f"{fit_file} -> {new_file_name}")
+                copy_file(new_file_name, os.path.join(
+                    dest_dir, new_file_name_base))
+                with open(okay_file, 'w') as file:
+                    file.write('')
+
+            except Exception as e:
+                print(f"Fehler beim Lesen der FIT-Datei '{fit_file}': {e}")
+
+    shutil.rmtree(temp_dir)
 
 
-shutil.rmtree(temp_dir)
+while True:
+    main()
+    sleep(600)
